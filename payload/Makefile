@@ -33,6 +33,7 @@ MID := ../tools/mid2agb/mid2agb
 AIF := ../tools/aif2pcm/aif2pcm
 GFX := ../tools/gbagfx/gbagfx
 RSFONT := ../tools/rsfont/rsfont
+GBAFIX := ../tools/gbafix/gbafix
 
 NAME := payload
 ROM := $(NAME).gba
@@ -170,9 +171,11 @@ $(OBJ_DIR)/ld_script.ld: ld_script.txt $(OBJ_DIR)/sym_bss.ld $(OBJ_DIR)/sym_comm
 
 $(ELF): $(OBJ_DIR)/ld_script.ld $(ALL_OBJS)
 	cd $(OBJ_DIR) && $(LD) -Map ../../$(NAME).map -T ../../$< -o ../../$@ $(LIBS)
+	$(GBAFIX) $@ -cAXVE -m01 --silent
 
 $(ROM): $(ELF)
 	$(OBJCOPY) -O binary $< $@
+	$(GBAFIX) $@ --silent
 
 include songs.mk
 include fonts.mk

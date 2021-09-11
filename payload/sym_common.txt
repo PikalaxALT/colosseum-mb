@@ -1,8 +1,8 @@
 
-gUnknown_020217B4:
+gSaveReadResult:
 	.space 0x4
 
-gUnknown_020217B8:
+gBerryFixResult:
 	.space 0x8
 
 gStringBuffers:

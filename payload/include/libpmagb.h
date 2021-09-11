@@ -5,5 +5,6 @@
 #include "libpmagb/save.h"
 #include "libpmagb/berry.h"
 #include "libpmagb/string_util.h"
+#include "libpmagb/trade.h"
 
 #endif //GUARD_LIBPMAGB_H

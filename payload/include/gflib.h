@@ -7,6 +7,7 @@
 #include "gflib/sound.h"
 #include "gflib/gfxload.h"
 #include "gflib/sprite.h"
+#include "gflib/text.h"
 
 void DetectROM(void);
 

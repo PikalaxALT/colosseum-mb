@@ -1,5 +1,5 @@
-gUnknown_0202524C
-gUnknown_02025250
+gUpdateSuccessful
+sGameVersion
 gTimeSinceBerryUpdate
 gRtcUTCTime
 padding_2025270

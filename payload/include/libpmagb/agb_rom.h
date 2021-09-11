@@ -1,6 +1,21 @@
 #ifndef PMAGB_AGB_ROM_H
 #define PMAGB_AGB_ROM_H
 
+struct RomHeader
+{
+    u8 nintendoLogo[156];
+    char titleName[12];
+    char gameCode[4];
+    char makerCode[2];
+    char magic; // 0x96
+    char unitCode;
+    char deviceType;
+    char reserved[7];
+    char gameVersion;
+    char complement;
+    short checksum;
+};
+
 struct RomInfo
 {
     /*0x00*/ int gameVersion;
@@ -75,6 +90,7 @@ struct RomInfo
     /*0xFC*/ const u8 *moveDescriptions;
 };
 
+extern const struct RomHeader gRomHeader;
 const struct RomInfo * gAgbPmRomParams;
 
 extern void * gSaveBlock1Ptr;
@@ -93,5 +109,7 @@ extern u8 * gFlagsPtr;
 extern u16 * gVarsPtr;
 extern u8 * gGiftRibbonsPtr;
 extern struct EnigmaBerry * gEnigmaBerryPtr;
+
+void SaveBlocksInit(void);
 
 #endif //PMAGB_AGB_ROM_H

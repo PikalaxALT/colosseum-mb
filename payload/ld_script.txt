@@ -78,6 +78,7 @@ SECTIONS {
 	.data :
 	ALIGN(4)
 	{
+        src/all.o(.data);
         data/all.o(.data);
 	} =0
 

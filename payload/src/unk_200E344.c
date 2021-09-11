@@ -1,14 +1,15 @@
 #include "global.h"
 #include "siirtc.h"
 #include "constants/vars.h"
+#include "berry_fix.h"
 
-u32 gUnknown_0202524C;
-u32 gUnknown_02025250;
+u32 gUpdateSuccessful;
+u32 sGameVersion;
 struct Time gTimeSinceBerryUpdate;
 struct Time gRtcUTCTime;
 u32 padding_2025270;
 
-static u32 gUnknown_02021380;
+static u32 gInitialWaitTimer;
 static struct SiiRtcInfo sRtcInfoWork;
 static u32 padding_2021394;
 static u16 sRtcProbeStatus;
@@ -22,8 +23,8 @@ bool32 WriteSaveBlockChunks(void);
 bool32 rtc_maincb_is_rtc_working(void);
 bool32 rtc_maincb_is_time_since_last_berry_update_positive(u8 *);
 void rtc_maincb_fix_date(void);
-bool32 sub_0200F3A0(void);
-bool32 sub_0200F3E4(void);
+bool32 check_pacifidlog_tm_received_day_before_today(void);
+bool32 bfix_fix_pacifidlog_tm(void);
 void rtc_probe_status(void);
 u16 rtc_get_probe_status(void);
 void rtc_get_status_and_datetime(struct SiiRtcInfo * rtc);
@@ -35,7 +36,7 @@ void rtc_intr_enable(void);
 bool8 is_leap_year(u8 year);
 u16 rtc_validate_datetime(struct SiiRtcInfo * info);
 
-const u8 gUnknown_0201F298[6][2] = {
+const u8 sLanguageCodeAndRevisionLUT[6][2] = {
     {'J', 1},
     {'E', 2},
     {'D', 1},
@@ -44,8 +45,8 @@ const u8 gUnknown_0201F298[6][2] = {
     {'S', 1}
 };
 
-const char gUnknown_0201F2A4[16] = "POKEMON RUBYAXV";
-const char gUnknown_0201F2B4[16] = "POKEMON SAPPAXP";
+const char sTitleCode_Ruby[16] = "POKEMON RUBYAXV";
+const char sTitleCode_Sapphire[16] = "POKEMON SAPPAXP";
 
 bool32 memcmp_u8(const char * a0, const char * a1, u32 a2)
 {
@@ -65,133 +66,133 @@ bool32 memcmp_u8(const char * a0, const char * a1, u32 a2)
 s32 validate_rom_header_internal(void)
 {
     s32 i;
-    s32 sp4;
+    s32 foundRomParam;
     s32 languageCode;
     s32 version;
 
     languageCode = *(const u8 *)0x080000AF;
     version = *(const u8 *)0x080000BC;
-    sp4 = -1;
-    for (i = 0; i < NELEMS(gUnknown_0201F298); i++)
+    foundRomParam = -1;
+    for (i = 0; i < NELEMS(sLanguageCodeAndRevisionLUT); i++)
     {
-        if (languageCode != gUnknown_0201F298[i][0])
+        if (languageCode != sLanguageCodeAndRevisionLUT[i][0])
         {
             continue;
         }
-        if (version >= gUnknown_0201F298[i][1])
+        if (version >= sLanguageCodeAndRevisionLUT[i][1])
         {
-            sp4 = 0;
+            foundRomParam = 0;
         }
         else
         {
-            sp4 = 1;
+            foundRomParam = 1;
         }
         break;
     }
-    if (sp4 == -1)
+    if (foundRomParam == -1)
     {
-        return 6;
+        return INVALID;
     }
-    if (memcmp_u8((const u8 *)0x080000A0, gUnknown_0201F2A4, 15) == TRUE)
+    if (memcmp_u8((const u8 *)0x080000A0, sTitleCode_Ruby, 15) == TRUE)
     {
-        if (sp4 == 0)
+        if (foundRomParam == 0)
         {
-            return 5;
+            return RUBY_NONEED;
         }
         else
         {
-            gUnknown_02025250 = 2;
-            return 3;
+            sGameVersion = VERSION_RUBY;
+            return RUBY_UPDATABLE;
         }
     }
-    if (memcmp_u8((const u8 *)0x080000A0, gUnknown_0201F2B4, 15) == TRUE)
+    if (memcmp_u8((const u8 *)0x080000A0, sTitleCode_Sapphire, 15) == TRUE)
     {
-        if (sp4 == 0)
+        if (foundRomParam == 0)
         {
-            return 4;
+            return SAPPHIRE_NONEED;
         }
         else
         {
-            gUnknown_02025250 = 1;
-            return 2;
+            sGameVersion = VERSION_SAPPHIRE;
+            return SAPPHIRE_UPDATABLE;
         }
     }
 
-    return 6;
+    return INVALID;
 }
 
 s32 validate_rom_header(void)
 {
     if (*(u8 *)0x080000B0 != '0')
-        return 6;
+        return INVALID;
     
     if (*(u8 *)0x080000B1 != '1')
-        return 6;
+        return INVALID;
     
     if (*(u8 *)0x080000B2 != 0x96)
-        return 6;
+        return INVALID;
     
     return validate_rom_header_internal();
 }
 
 void main_callback(u32 * pstate, u8 * buffer, u32 unk2)
 {
-    u8 sp0C;
-    int sp10;
+    u8 yearLo;
+    int romHeaderValidParam;
     switch (*pstate)
     {
-    case 0:
-        gUnknown_02021380 = 0;
-        gUnknown_0202524C = 0;
-        sp10 = validate_rom_header();
-        switch (sp10)
+    case MAINCB_INIT:
+        gInitialWaitTimer = 0;
+        gUpdateSuccessful = 0;
+        romHeaderValidParam = validate_rom_header();
+        switch (romHeaderValidParam)
         {
-        case 6:
-            *pstate = 11;
+        case INVALID:
+            *pstate = MAINCB_ERROR;
             break;
-        case 5:
-        case 4:
-            *pstate = 6;
+        case RUBY_NONEED:
+        case SAPPHIRE_NONEED:
+            *pstate = MAINCB_NO_NEED_TO_FIX;
             break;
-        case 3:
-        case 2:
+        case RUBY_UPDATABLE:
+        case SAPPHIRE_UPDATABLE:
             (*pstate)++;
             break;
         }
         break;
-    case 1:
-        if (rtc_maincb_is_rtc_working() == 0)
+    case MAINCB_CHECK_RTC:
+        if (rtc_maincb_is_rtc_working() == FALSE)
         {
-            *pstate = 11;
+            *pstate = MAINCB_ERROR;
         }
         else
         {
             (*pstate)++;
         }
         break;
-    case 2:
+    case MAINCB_CHECK_FLASH:
         (*pstate)++;
         break;
-    case 3:
+    case MAINCB_READ_SAVE:
         (*pstate)++;
         break;
-    case 4:
-        if (rtc_maincb_is_time_since_last_berry_update_positive(&sp0C) == 1)
+    case MAINCB_CHECK_TIME:
+        if (rtc_maincb_is_time_since_last_berry_update_positive(&yearLo) == TRUE)
         {
-            if (sp0C == 0)
+            if (yearLo == 0) // 2000
             {
                 (*pstate)++;
             }
             else
             {
-                *pstate = 9;
+                *pstate = MAINCB_CHECK_PACIFIDLOG_TM;
             }
         }
         else
         {
-            if (sp0C != 1)
+            if (yearLo != 1) // 2001
             {
-                *pstate = 7;
+                *pstate = MAINCB_YEAR_MAKES_NO_SENSE;
             }
             else
             {
@@ -199,40 +200,40 @@ void main_callback(u32 * pstate, u8 * buffer, u32 unk2)
             }
         }
         break;
-    case 5:
+    case MAINCB_FIX_DATE:
         rtc_maincb_fix_date();
-        gUnknown_0202524C |= 1;
-        *pstate = 9;
+        gUpdateSuccessful |= 1;
+        *pstate = MAINCB_CHECK_PACIFIDLOG_TM;
         break;
-    case 9:
-        if (sub_0200F3A0() == 1)
+    case MAINCB_CHECK_PACIFIDLOG_TM:
+        if (check_pacifidlog_tm_received_day_before_today() == TRUE)
         {
-            *pstate = 8;
+            *pstate = MAINCB_FINISHED;
         }
         else
         {
-            *pstate = 10;
+            *pstate = MAINCB_FIX_PACIFIDLOG_TM;
         }
         break;
-    case 10:
-        if (sub_0200F3E4() == 1)
+    case MAINCB_FIX_PACIFIDLOG_TM:
+        if (bfix_fix_pacifidlog_tm() == TRUE)
         {
-            gUnknown_0202524C |= 1;
-            *pstate = 8;
+            gUpdateSuccessful |= 1;
+            *pstate = MAINCB_FINISHED;
         }
         else
         {
-            *pstate = 11;
+            *pstate = MAINCB_ERROR;
         }
         break;
-    case 8:
-        *pstate = 6;
+    case MAINCB_FINISHED:
+        *pstate = MAINCB_NO_NEED_TO_FIX;
         break;
-    case 6:
+    case MAINCB_NO_NEED_TO_FIX:
         break;
-    case 7:
+    case MAINCB_YEAR_MAKES_NO_SENSE:
         break;
-    case 11:
+    case MAINCB_ERROR:
         break;
     }
 }
@@ -255,15 +256,15 @@ void rtc_set_datetime(struct SiiRtcInfo *rtc)
     REG_IME = imeBak;
 }
 
-bool32 rtc_maincb_is_time_since_last_berry_update_positive(u8 * a0)
+bool32 rtc_maincb_is_time_since_last_berry_update_positive(u8 * year_p)
 {
-    s32 sp04;
+    s32 totalMinutes;
     rtc_get_status_and_datetime(&sRtcInfoWork);
-    *a0 = bcd_to_hex(sRtcInfoWork.year);
+    *year_p = bcd_to_hex(sRtcInfoWork.year);
     rtc_sub_time_from_datetime(&sRtcInfoWork, &gRtcUTCTime, &((struct SaveBlock2 *)gSaveBlock2Ptr)->localTimeOffset);
     rtc_sub_time_from_time(&gTimeSinceBerryUpdate, &((struct SaveBlock2 *)gSaveBlock2Ptr)->lastBerryTreeUpdate, &gRtcUTCTime);
-    sp04 = gTimeSinceBerryUpdate.days * 1440 + gTimeSinceBerryUpdate.hours * 60 + gTimeSinceBerryUpdate.minutes;
-    if (sp04 >= 0)
+    totalMinutes = gTimeSinceBerryUpdate.days * 1440 + gTimeSinceBerryUpdate.hours * 60 + gTimeSinceBerryUpdate.minutes;
+    if (totalMinutes >= 0)
         return TRUE;
     else
         return FALSE;
@@ -271,14 +272,14 @@ bool32 rtc_maincb_is_time_since_last_berry_update_positive(u8 * a0)
 
 s32 hex_to_bcd(u8 a0)
 {
-    s32 sp4 = 0;
+    s32 ret = 0;
     if (a0 > 99)
     {
         return 0xFF;
     }
-    sp4  = Div(a0, 10) << 4;
-    sp4 |= Mod(a0, 10);
-    return sp4;
+    ret  = Div(a0, 10) << 4;
+    ret |= Mod(a0, 10);
+    return ret;
 }
 
 void sii_rtc_inc(u8 * a0)
@@ -371,7 +372,7 @@ char * print_bcd(char * a0, u8 a1)
 
 char * print_rtc(char * a0)
 {
-    if (gUnknown_02025250 != 1 && gUnknown_02025250 != 2)
+    if (sGameVersion != 1 && sGameVersion != 2)
     {
         
     }
@@ -635,7 +636,7 @@ void sub_0200F344(void)
     return;
 }
 
-u16 * sub_0200F350(u16 a0)
+u16 * bfix_var_get(u16 a0)
 {
     if (a0 < VARS_START)
         return NULL;
@@ -644,27 +645,27 @@ u16 * sub_0200F350(u16 a0)
     return NULL;
 }
 
-bool32 sub_0200F3A0(void)
+bool32 check_pacifidlog_tm_received_day_before_today(void)
 {
-    u8 sp0;
-    u16 * data = sub_0200F350(VAR_PACIFIDLOG_TM_RECEIVED_DAY);
-    rtc_maincb_is_time_since_last_berry_update_positive(&sp0);
+    u8 yearLo;
+    u16 * data = bfix_var_get(VAR_PACIFIDLOG_TM_RECEIVED_DAY);
+    rtc_maincb_is_time_since_last_berry_update_positive(&yearLo);
     if (*data <= gRtcUTCTime.days)
         return TRUE;
     else
         return FALSE;
 }
 
-bool32 sub_0200F3E4(void)
+bool32 bfix_fix_pacifidlog_tm(void)
 {
     u16 * varAddr;
     u8 sp0;
-    if (sub_0200F3A0() == TRUE)
+    if (check_pacifidlog_tm_received_day_before_today() == TRUE)
         return TRUE;
     rtc_maincb_is_time_since_last_berry_update_positive(&sp0);
     if (gRtcUTCTime.days < 0)
         return FALSE;
-    varAddr = sub_0200F350(VAR_PACIFIDLOG_TM_RECEIVED_DAY);
+    varAddr = bfix_var_get(VAR_PACIFIDLOG_TM_RECEIVED_DAY);
     *varAddr = 1;
     if (WriteSaveBlockChunks() != TRUE)
         return FALSE;

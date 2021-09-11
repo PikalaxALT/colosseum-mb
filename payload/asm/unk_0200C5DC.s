@@ -352,25 +352,32 @@ _0200C9A2:
 	.align 2, 0
 	.pool
 
-	thumb_func_start sub_0200C9C0
-sub_0200C9C0: @ 0x0200C9C0
+	thumb_func_start BuildPlayerSaveProfile
+	@ struct UnkStruct_2023F50 * BuildPlayerSaveProfile(struct SaveBlock2 *sb2, UNUSED struct SaveBlock1 *sb1, int saveStatus);
+BuildPlayerSaveProfile: @ 0x0200C9C0
+	@ u8 * id_p ;
+	@ int i;
 	push {r4, r5, r6, r7, lr}
 	mov r7, r8
 	push {r7}
 	sub sp, #4
 	adds r6, r0, #0
 	adds r5, r2, #0
+	@ struct UnkStruct_2023F50 * ret = &gUnknown_02023F50;
 	ldr r7, =gUnknown_02023F50
+	@ CpuClear16((void *)ret, sizeof(*ret));
 	mov r0, sp
 	movs r1, #0
 	strh r1, [r0]
 	ldr r2, =0x0100013C
 	adds r1, r7, #0
 	bl CpuSet
+	@ if (saveStatus == SAVE_STATUS_OK) {
 	cmp r5, #1
 	beq _0200C9E2
 	b _0200CAF0
 _0200C9E2:
+	@ if (!gAgbPmRomParams->unk_B8_1)
 	ldr r0, =gAgbPmRomParams
 	mov r8, r0
 	ldr r0, [r0]
@@ -379,7 +386,9 @@ _0200C9E2:
 	lsls r0, r0, #0x1e
 	cmp r0, #0
 	blt _0200CA60
-	bl sub_0200CD88
+	@ {
+	@ ret->unk_000_0 = GetSysPokedexFlag();
+	bl GetSysPokedexFlag
 	lsls r0, r0, #0x18
 	lsrs r0, r0, #0x18
 	movs r4, #1
@@ -390,6 +399,7 @@ _0200C9E2:
 	ands r1, r2
 	orrs r1, r0
 	strb r1, [r7]
+	@ ret->unk_000_1 = GetPlayerMapType() & 1;
 	bl GetPlayerMapType
 	lsls r0, r0, #0x18
 	lsrs r0, r0, #0x19
@@ -402,6 +412,7 @@ _0200C9E2:
 	ands r1, r2
 	orrs r1, r0
 	strb r1, [r7]
+	@ ret->unk_000_2 = IsFRLG();
 	bl IsFRLG
 	ands r0, r4
 	lsls r0, r0, #2
@@ -411,6 +422,7 @@ _0200C9E2:
 	ands r1, r2
 	orrs r1, r0
 	strb r1, [r7]
+	@ ret->unk_000_3 = GetPlayerMapType() >> 7;
 	bl GetPlayerMapType
 	lsls r0, r0, #0x18
 	lsrs r0, r0, #0x1f
@@ -422,6 +434,7 @@ _0200C9E2:
 	ands r1, r2
 	orrs r1, r0
 	strb r1, [r7]
+	@ ret->unk_000_4 = gAgbPmRomParams->gameLanguage;
 	mov r2, r8
 	ldr r0, [r2]
 	ldr r0, [r0, #4]
@@ -430,7 +443,9 @@ _0200C9E2:
 	ands r1, r2
 	orrs r1, r0
 	strb r1, [r7]
+	@ }
 _0200CA60:
+	@ StringCopy(ret->unk_004, sb2 + gAgbPmRomParams->sb2PlayerNameOffs);
 	mov r1, r8
 	ldr r0, [r1]
 	adds r0, #0xa0
@@ -439,6 +454,7 @@ _0200CA60:
 	adds r0, r7, #4
 	adds r1, r2, #0
 	bl StringCopy
+	@ ret->unk_00C = *((u8 *)sb2 + gAgbPmRomParams->sb2PlayerGenderOffs);
 	mov r2, r8
 	ldr r1, [r2]
 	adds r0, r1, #0
@@ -447,82 +463,109 @@ _0200CA60:
 	adds r2, r6, r0
 	ldrb r0, [r2]
 	str r0, [r7, #0xc]
+	@ id_p = (u8 *)(sb2 + gAgbPmRomParams->sb2PlayerIdOffs);
 	adds r1, #0x9c
 	ldr r0, [r1]
 	adds r2, r6, r0
+	@ for (i = 0; i < 4; i++)
 	movs r4, #0
 	adds r3, r7, #0
 	adds r3, #0x10
+	@ {
 _0200CA8E:
+	@ ret->unk_010[i] = id_p[i];
 	adds r0, r3, r4
 	adds r1, r2, r4
 	ldrb r1, [r1]
 	strb r1, [r0]
+	@ }
 	adds r4, #1
 	cmp r4, #3
 	ble _0200CA8E
+	@ for (i = 0; i < PARTY_SIZE; i++)
 	movs r4, #0
 	ldr r0, =gPlayerPartyPtr
 	mov r8, r0
 	adds r5, r7, #0
 	adds r5, #0x14
 	movs r6, #0
+	@ {
 _0200CAA8:
+	@ CpuCopy16(&ret->unk_14[i], gPlayerPartyPtr[i], sizeof(struct Pokemon));
 	mov r1, r8
 	ldr r0, [r1]
 	adds r0, r0, r6
 	adds r1, r5, #0
 	movs r2, #0x32
 	bl CpuSet
+	@ }
 	adds r5, #0x64
 	adds r6, #0x64
 	adds r4, #1
 	cmp r4, #5
 	ble _0200CAA8
+	@ for (i = 0; i < 11; i++)
 	movs r4, #0
 	movs r0, #0x9b
 	lsls r0, r0, #2
 	adds r2, r7, r0
 	ldr r3, =gGiftRibbonsPtr
+	@ {
 _0200CACA:
+	@ ret->unk_26C[i] = gGiftRibbonsPtr[i];
 	adds r0, r2, r4
 	ldr r1, [r3]
 	adds r1, r1, r4
 	ldrb r1, [r1]
 	strb r1, [r0]
+	@ }
 	adds r4, #1
 	cmp r4, #0xa
 	ble _0200CACA
+	@ }
 	b _0200CB1C
 	.align 2, 0
 	.pool
 _0200CAF0:
+	@ else if (saveStatus == 2)
 	cmp r5, #2
 	bne _0200CB00
+	@ {
+	@ ret->unk_001_0 = 1;
 	movs r0, #4
 	rsbs r0, r0, #0
 	ldrb r1, [r7, #1]
 	ands r0, r1
 	movs r1, #1
+	@ }
 	b _0200CB18
 _0200CB00:
+	@ else if (saveStatus == SAVE_STATUS_ERROR)
 	cmp r5, #0xff
 	bne _0200CB10
+	@ {
+	@ ret->unk_001_0 = 2;
 	movs r0, #4
 	rsbs r0, r0, #0
 	ldrb r2, [r7, #1]
 	ands r0, r2
 	movs r1, #2
+	@ }
 	b _0200CB18
 _0200CB10:
+	@ else if (saveStatus == SAVE_STATUS_EMPTY)
 	cmp r5, #0
 	bne _0200CB1C
+	@ {
+	@ ret->unk_001_0 = 3;
 	movs r0, #3
 	ldrb r1, [r7, #1]
 _0200CB18:
 	orrs r0, r1
 	strb r0, [r7, #1]
+	@ }
 _0200CB1C:
+	@ return ret;
 	adds r0, r7, #0
 	add sp, #4
 	pop {r3}
@@ -530,10 +573,11 @@ _0200CB1C:
 	pop {r4, r5, r6, r7}
 	pop {r1}
 	bx r1
+	@ }
 	.align 2, 0
 
-	thumb_func_start sub_0200CB2C
-sub_0200CB2C: @ 0x0200CB2C
+	thumb_func_start GetPlayerSaveProfile
+GetPlayerSaveProfile: @ 0x0200CB2C
 	ldr r0, =gUnknown_02023F50
 	bx lr
 	.align 2, 0
@@ -841,8 +885,8 @@ sub_0200CD84: @ 0x0200CD84
 	bx lr
 	.align 2, 0
 
-	thumb_func_start sub_0200CD88
-sub_0200CD88: @ 0x0200CD88
+	thumb_func_start GetSysPokedexFlag
+GetSysPokedexFlag: @ 0x0200CD88
 	push {lr}
 	ldr r0, =gRomDetection_IsRubySapphire
 	ldrb r0, [r0]
@@ -1731,7 +1775,7 @@ _0200D42C:
 _0200D448:
 	cmp r4, #0x99
 	bne _0200D46C
-	bl sub_0200CB2C
+	bl GetPlayerSaveProfile
 	str r0, [r5]
 	ldr r0, =0x04000154
 	str r4, [r0]
@@ -2416,8 +2460,8 @@ _0200D992:
 	.align 2, 0
 	.pool
 
-	thumb_func_start sub_0200D9EC
-sub_0200D9EC: @ 0x0200D9EC
+	thumb_func_start VBlankCB_default
+VBlankCB_default: @ 0x0200D9EC
 	push {lr}
 	ldr r0, =0x080000B2
 	ldrb r0, [r0]

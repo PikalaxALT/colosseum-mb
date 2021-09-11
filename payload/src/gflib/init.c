@@ -69,7 +69,7 @@ void SetIntrFunc(int i, IntrFunc func)
         gIntrTable[i] = IntrDummy;
 }
 
-void SetVBlankCallback(IntrFunc cb)
+void SetVBlankCallback(void *cb)
 {
     u16 imeBak = REG_IME;
     REG_IME = 0;

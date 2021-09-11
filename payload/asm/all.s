@@ -4,159 +4,6 @@
 	.equ SE_SELECT,  0
 	.equ SE_FAILURE, 1
 
-	thumb_func_start GF_Main
-GF_Main: @ 0x020002B4
-	push {r4, r5, r6, r7, lr}
-	sub sp, #0x48
-	bl DetectROM
-	ldr r0, =gUnknown_0201F4AC
-	ldr r1, [r0]
-	movs r0, #2
-	bl sub_020098D8
-	bl SaveBlocksInit
-	bl SetSaveSectorPtrs
-	ldr r4, =gUnknown_020217B4
-	bl ReadSaveBlockChunks
-	strb r0, [r4]
-	ldr r5, =gUnknown_020217B8
-	movs r0, #0
-	str r0, [sp, #0x44]
-	movs r4, #0
-	ldr r0, =gAgbPmRomParams
-	ldr r0, [r0]
-	ldr r0, [r0, #4]
-	cmp r0, #2
-	beq _02000304
-	movs r0, #0
-	ldr r6, =gRomHeader + 0xA8
-	add r7, sp, #0x40
-	b _0200032C
-	.align 2, 0
-	.pool
-_02000304:
-	ldr r6, =gRomHeader + 0xA8
-	add r7, sp, #0x40
-_02000308:
-	add r0, sp, #0x44
-	mov r1, sp
-	movs r2, #0
-	bl main_callback
-	ldr r1, [sp, #0x44]
-	cmp r1, #5
-	bne _0200031A
-	movs r4, #1
-_0200031A:
-	cmp r1, #0xb
-	bne _02000320
-	movs r4, #2
-_02000320:
-	subs r0, r1, #6
-	cmp r0, #1
-	bls _0200032A
-	cmp r1, #0xb
-	bne _02000308
-_0200032A:
-	adds r0, r4, #0
-_0200032C:
-	strb r0, [r5]
-	bl InitSound
-	bl sub_02002C44
-	movs r0, #0x28
-	movs r1, #5
-	bl SetKeyRepeatTiming
-	ldr r0, =0x04000200
-	movs r3, #1
-	strh r3, [r0]
-	ldr r1, =0x04000004
-	movs r0, #8
-	strh r0, [r1]
-	movs r2, #0x80
-	lsls r2, r2, #0x13
-	ldrh r1, [r2]
-	ldr r0, =0x0000FF7F
-	ands r0, r1
-	strh r0, [r2]
-	ldr r0, =0x04000208
-	strh r3, [r0]
-	ldr r0, =gSaveBlock2Ptr
-	ldr r0, [r0]
-	ldr r1, =gSaveBlock1Ptr
-	ldr r1, [r1]
-	ldr r2, =gUnknown_020217B4
-	ldrb r2, [r2]
-	bl sub_0200C9C0
-	adds r0, r6, #0
-	bl sub_0200D924
-	ldr r0, =sub_0200D9EC
-	bl SetVBlankCallback
-	bl PauseSoundVSync
-	ldr r0, =0x03004000
-	bl GenerateFontHalfrowLookupTable
-	bl FadeOut
-_02000384:
-	bl sub_020047D4
-	cmp r0, #0
-	bne _020003EA
-	bl sub_02006344
-	bl sub_02005BB8
-	bl sub_020064B0
-	cmp r0, #0
-	bne _020003E4
-	ldr r1, =gUnknown_02024960
-	ldrb r0, [r1, #3]
-	lsls r0, r0, #0x19
-	cmp r0, #0
-	beq _020003DC
-	ldrb r0, [r1, #3]
-	lsls r0, r0, #0x19
-	lsrs r0, r0, #0x19
-	subs r0, #1
-	b _020003DE
-	.align 2, 0
-	.pool
-_020003DC:
-	movs r0, #0
-_020003DE:
-	bl sub_02005704
-	b _02000384
-_020003E4:
-	bl sub_0200023C
-	b _02000384
-_020003EA:
-	ldr r0, =gSaveBlock1BakPtr
-	ldr r0, [r0]
-	ldr r1, =gSaveBlock1Ptr
-	ldr r1, [r1]
-	ldr r2, =gAgbPmRomParams
-	ldr r2, [r2]
-	adds r2, #0x8c
-	ldr r2, [r2]
-	lsls r2, r2, #0xa
-	lsrs r2, r2, #0xb
-	bl CpuSet
-	movs r0, #0
-	strh r0, [r7]
-	movs r5, #0
-	ldr r6, =gPlayerPartyPtr
-	movs r4, #0
-_0200040C:
-	ldr r0, [r6]
-	adds r0, r0, r4
-	movs r1, #0x37
-	adds r2, r7, #0
-	bl SetMonData
-	adds r4, #0x64
-	adds r5, #1
-	cmp r5, #5
-	ble _0200040C
-	movs r0, #1
-	movs r1, #0
-	movs r2, #0
-	bl sub_02002A9C
-	b _02000384
-	.align 2, 0
-	.pool
-
 	thumb_func_start sub_0200043C
 sub_0200043C: @ 0x0200043C
 	push {r4, lr}
@@ -4951,8 +4798,8 @@ _02002C1E:
 	.align 2, 0
 	.pool
 
-	thumb_func_start sub_02002C44
-sub_02002C44: @ 0x02002C44
+	thumb_func_start InitStruct2021B60
+InitStruct2021B60: @ 0x02002C44
 	push {r4, r5, lr}
 	sub sp, #4
 	mov r0, sp
@@ -8015,7 +7862,7 @@ sub_0200465C: @ 0x0200465C
 	thumb_func_start sub_0200472C
 sub_0200472C: @ 0x0200472C
 	push {r4, lr}
-	ldr r0, =gUnknown_020217B4
+	ldr r0, =gSaveReadResult
 	ldrb r0, [r0]
 	cmp r0, #2
 	beq _0200474A
@@ -8160,7 +8007,7 @@ _0200486C:
 	.align 2, 0
 	.pool
 _02004898:
-	ldr r0, =gUnknown_020217B8
+	ldr r0, =gBerryFixResult
 	ldrb r0, [r0]
 	cmp r0, #1
 	beq _020048AC
@@ -8197,7 +8044,7 @@ _020048B6:
 	ands r0, r1
 	strb r0, [r3]
 	bl FadeIn
-	ldr r0, =gUnknown_020217B4
+	ldr r0, =gSaveReadResult
 	ldrb r0, [r0]
 	cmp r0, #2
 	beq _020048F6
@@ -8212,13 +8059,13 @@ _020048F6:
 	.align 2, 0
 	.pool
 _0200491C:
-	ldr r0, =gUnknown_020217B8
+	ldr r0, =gBerryFixResult
 	ldrb r0, [r0]
 	cmp r0, #1
 	bne _02004932
 	ldr r0, =gMessageWindowPtr
 	ldr r0, [r0]
-	ldr r1, =gUnknown_02020508
+	ldr r1, =gText_YourBerryProgramWasUpdated
 	bl RenderText
 	bl sub_0200472C
 _02004932:

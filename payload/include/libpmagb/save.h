@@ -9,5 +9,7 @@
 #define SAVE_STATUS_ERROR 0xFF
 
 u8* ReadFirstSaveSector(void);
+void SetSaveSectorPtrs(void);
+u32 ReadSaveBlockChunks(void);
 
 #endif //PMAGB_SAVE_H

@@ -10,7 +10,7 @@ void AgbMain(void);
 extern IntrFunc gIntrTable[14u];
 
 void SetIntrFunc(int i, IntrFunc func);
-void SetVBlankCallback(IntrFunc cb);
+void SetVBlankCallback(void *cb);
 u32 GetFrameTotal(void);
 void DelayFrames(u32 a0);
 

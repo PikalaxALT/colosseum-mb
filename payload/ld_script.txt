@@ -11,6 +11,7 @@ SECTIONS {
         asm/crt0.o(.text);
         src/all.o(.text);
         asm/all.o(.text);
+
     } =0
 
     lib_text :
@@ -32,6 +33,7 @@ SECTIONS {
         asm/libpmagb/save.o(.text);
         asm/pokemon.o(.text);
         src/libpmagb/berry.o(.text);
+        src/unk_200C5DC.o(.text);
         asm/unk_0200C5DC.o(.text);
         src/agb_flash.o(.text);
         src/agb_flash_1m.o(.text);
@@ -51,7 +53,8 @@ SECTIONS {
     ALIGN(4)
     {
         data/all.o(.rodata);
-        data/graphics.o(.rodata);
+        src/strings.o(.rodata);
+        src/graphics.o(.rodata);
     } =0
 
     m4a_rodata :
@@ -66,26 +69,29 @@ SECTIONS {
     lib_rodata :
     ALIGN(4)
     {
-        data/mb_020094A8.o(.rodata);
+	src/mb_20094A8.o(.rodata);
+        src/rom_info.o(.rodata);
         src/agb_flash.o(.rodata);
         src/agb_flash_1m.o(.rodata);
         src/agb_flash_mx.o(.rodata);
         src/agb_flash_le.o(.rodata);
         src/unk_200E344.o(.rodata);
         src/siirtc.o(.rodata);
-	} =0
+    } =0
 
-	.data :
-	ALIGN(4)
-	{
+    .data :
+    ALIGN(4)
+    {
         data/all.o(.data);
-	} =0
+        src/strings.o(.data);
+    } =0
 
-	lib_data :
-	ALIGN(4)
-	{
-		src/libpmagb/save.o(.data);
-        data/mb_020094A8.o(.data);
+    lib_data :
+    ALIGN(4)
+    {
+        src/libpmagb/save.o(.data);
+        src/mb_20094A8.o(.data);
+        src/rom_info.o(.data);
     } =0
     bss_start = .;
     wram (NOLOAD) :

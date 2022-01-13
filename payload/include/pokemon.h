@@ -89,7 +89,7 @@ struct BoxPokemon
     /*0x13*/ u8 isBadEgg:1;
              u8 hasSpecies:1;
              u8 isEgg:1;
-    /*0x14*/ u8 otName[OT_NAME_LENGTH];
+    /*0x14*/ u8 otName[PLAYER_NAME_LENGTH];
     /*0x1B*/ u8 markings;
     /*0x1C*/ u16 checksum;
     /*0x1E*/ u16 unknown;
@@ -149,6 +149,12 @@ struct PokemonStorage
     /*0x0004*/ struct BoxPokemon boxes[14][30];
     /*0x8344*/ u8 boxNames[14][9];
     /*0x83c2*/ u8 wallpaper[14];
+};
+
+struct SpindaSpot
+{
+    u8 x, y;
+    u16 image[16];
 };
 
 void SetMonData(struct Pokemon * pokemon, u32 attr, u8 * data);
